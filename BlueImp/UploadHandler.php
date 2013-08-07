@@ -293,6 +293,11 @@ class UploadHandler
     }
 
     protected function handle_file_upload($uploaded_file, $name, $size, $type, $error, $index) {
+        // Get number of files in folder and then substract 1 because of . and .. so that
+		// when the folder is empty, $index_img = 1
+		$index_img = iterator_count(new \DirectoryIterator($this->options['upload_dir'])) - 1;
+		$name = 'img-'.$index_img;
+        
         $file = new \stdClass();
         $file->name = $this->trim_file_name($name, $type, $index);
         $file->size = intval($size);

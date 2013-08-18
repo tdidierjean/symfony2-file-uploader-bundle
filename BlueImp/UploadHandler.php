@@ -293,11 +293,6 @@ class UploadHandler
     }
 
     protected function handle_file_upload($uploaded_file, $name, $size, $type, $error, $index) {
-        // Get number of files in folder and then substract 1 because of . and .. so that
-		// when the folder is empty, $index_img = 1
-		$index_img = iterator_count(new \DirectoryIterator($this->options['upload_dir'])) - 1;
-		$name = 'img-'.$index_img;
-        
         $file = new \stdClass();
         $file->name = $this->trim_file_name($name, $type, $index);
         $file->size = intval($size);
@@ -366,12 +361,13 @@ class UploadHandler
         echo json_encode($info);
     }
 
-    public function post() {
+    public function post($img_name=null) {
         if (isset($_REQUEST['_method']) && $_REQUEST['_method'] === 'DELETE') {
             return $this->delete();
         }
         $upload = isset($_FILES[$this->options['param_name']]) ?
             $_FILES[$this->options['param_name']] : null;
+
         $info = array();
         if ($upload && is_array($upload['tmp_name'])) {
             // param_name is an array identifier like "files[]",
@@ -379,8 +375,7 @@ class UploadHandler
             foreach ($upload['tmp_name'] as $index => $value) {
                 $info[] = $this->handle_file_upload(
                     $upload['tmp_name'][$index],
-                    isset($_SERVER['HTTP_X_FILE_NAME']) ?
-                        $_SERVER['HTTP_X_FILE_NAME'] : $upload['name'][$index],
+					$img_name,
                     isset($_SERVER['HTTP_X_FILE_SIZE']) ?
                         $_SERVER['HTTP_X_FILE_SIZE'] : $upload['size'][$index],
                     isset($_SERVER['HTTP_X_FILE_TYPE']) ?
@@ -394,9 +389,7 @@ class UploadHandler
             // $_FILES is a one-dimensional array:
             $info[] = $this->handle_file_upload(
                 isset($upload['tmp_name']) ? $upload['tmp_name'] : null,
-                isset($_SERVER['HTTP_X_FILE_NAME']) ?
-                    $_SERVER['HTTP_X_FILE_NAME'] : (isset($upload['name']) ?
-                        $upload['name'] : null),
+				$img_name,
                 isset($_SERVER['HTTP_X_FILE_SIZE']) ?
                     $_SERVER['HTTP_X_FILE_SIZE'] : (isset($upload['size']) ?
                         $upload['size'] : null),

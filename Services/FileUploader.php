@@ -137,7 +137,8 @@ class FileUploader
                 if (isset($_REQUEST['_method']) && $_REQUEST['_method'] === 'DELETE') {
                     $upload_handler->delete();
                 } else {
-                    $upload_handler->post();
+					// RESABOX
+                    $upload_handler->post($options['img_name']);
                 }
                 break;
             case 'DELETE':

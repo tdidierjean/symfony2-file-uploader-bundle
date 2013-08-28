@@ -64,27 +64,106 @@ function PunkAveFileUploader(options)
     self.addExistingFiles(options.existingFiles);
   }
 
-  editor.fileupload({
-    dataType: 'json',
-    url: uploadUrl,
-    dropZone: $el.find('[data-dropzone="1"]'),
-    done: function (e, data) {
-      if (data)
-      {
-        _.each(data.result, function(item) {
-          appendEditableImage(item);
-        });
-      }
-    },
-    start: function (e) {
-      $el.find('[data-spinner="1"]').show();
-      self.uploading = true;
-    },
-    stop: function (e) {
-      $el.find('[data-spinner="1"]').hide();
-      self.uploading = false;
-    }
-  });
+	var	uploadButton = $('<button/>')
+		.addClass('btn btn-primary upload')
+		.prop('disabled', true)
+		.text('Processing...')
+		.on('click', function () {
+			var $this = $(this),
+				data = $this.data();
+			$this
+				.off('click')
+				.text('Abort')
+				.on('click', function () {
+					$this.remove();
+					data.abort();
+				});
+			data.submit().always(function () {
+				$this.remove();
+				$('#modalCrop').modal('hide');
+			});
+		});
+
+
+	// Changes for jcrop integration
+	editor.fileupload({
+		previewCanvas: true,
+		previewMaxWidth: 960,
+		previewMaxHeight: 1000,
+		previewMinWidth: 960,
+		previewThumbnail: false,
+		autoUpload: false,
+		dataType: 'json',
+		url: uploadUrl,
+		dropZone: $el.find('[data-dropzone="1"]'),
+		done: function (e, data) {
+			if (data)
+			{
+				_.each(data.result, function(item) {
+					appendEditableImage(item);
+				});
+			}
+		},
+		start: function (e) {
+			$el.find('[data-spinner="1"]').show();
+			self.uploading = true;
+		},
+		stop: function (e) {
+			$el.find('[data-spinner="1"]').hide();
+			self.uploading = false;
+		}
+	}).on('fileuploadadd', function (e, data) {
+			data.context = $('#modalCrop .modal-body p').html('<div/>');
+			$('#modalUpload').modal('hide');
+			$('#modalCrop').modal({});
+
+			$.each(data.files, function (index, file) {
+				var node = $('<p/>');
+//					.append($('<span/>').text(file.name));
+//				if (!index) {
+//					node
+//						.append('<br>')
+//						.append(uploadButton.clone(true).data(data))
+					$('button.upload').remove();
+					$('#modalCrop .modal-footer').append(uploadButton.clone(true).data(data));
+//				}
+				node.appendTo(data.context);
+			});
+		}).on('fileuploadprocessalways', function (e, data) {
+			var index = data.index,
+				file = data.files[index],
+				node = $(data.context.children()[index]);
+			if (file.preview) {
+				node
+					.prepend('<br>')
+					.prepend(file.preview);
+			}
+			if (file.error) {
+				node
+					.append('<br>')
+					.append(file.error);
+			}
+			if (index + 1 === data.files.length) {
+				$('#modalCrop button.upload')
+					.text('Valider')
+					.prop('disabled', !!data.files.error);
+			}
+
+			window.setTimeout(function(){
+				$('#modalCrop .modal-body canvas').Jcrop({
+					aspectRatio: 2.925,
+					setSelect: [0,100,1170,500],
+					bgOpacity: 0.4,
+					onSelect: function(coords){
+						$('#x').val(coords.x);
+						$('#y').val(coords.y);
+						$('#w').val(coords.w);
+						$('#h').val(coords.h);
+					}
+				});
+			},
+			500);
+		});
 
   // Expects thumbnail_url, url, and name properties. thumbnail_url can be undefined if
   // url does not end in gif, jpg, jpeg or png. This is designed to work with the

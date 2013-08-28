@@ -292,7 +292,8 @@ class UploadHandler
       	return $success;
     }
 
-    protected function handle_file_upload($uploaded_file, $name, $size, $type, $error, $index) {
+	// Changed to allow image cropping and resizing of original upload
+    protected function handle_file_upload($uploaded_file, $name, $size, $type, $error, $index, $resize_options) {
         $file = new \stdClass();
         $file->name = $this->trim_file_name($name, $type, $index);
         $file->size = intval($size);
@@ -312,7 +313,20 @@ class UploadHandler
                         FILE_APPEND
                     );
                 } else {
-                    move_uploaded_file($uploaded_file, $file_path);
+					if ($resize_options)
+					{
+						$src = $uploaded_file;
+						$img_r = imagecreatefromjpeg($src);
+						$dst_r = ImageCreateTrueColor( $resize_options['targ_w'], $resize_options['targ_h'] );
+
+						imagecopyresampled($dst_r,$img_r,0,0,$resize_options['x'],$resize_options['y'],
+							$resize_options['targ_w'],$resize_options['targ_h'],$resize_options['w'],$resize_options['h']);
+						imagejpeg($dst_r, $file_path, $resize_options['jpeg_quality']);
+					}
+					else
+					{
+						move_uploaded_file($uploaded_file, $file_path);
+					}
                 }
             } else {
                 // Non-multipart uploads (PUT method support)
@@ -323,7 +337,9 @@ class UploadHandler
                 );
             }
             $file_size = filesize($file_path);
-            if ($file_size === $file->size) {
+
+			// Changed to resize file for preview even if size isn't changed, because the result must be a canvas
+//            if ($file_size === $file->size) {
             	if ($this->options['orient_image']) {
             		$this->orient_image($file_path);
             	}
@@ -339,10 +355,10 @@ class UploadHandler
                         }
                     }
                 }
-            } else if ($this->options['discard_aborted_uploads']) {
-                unlink($file_path);
-                $file->error = 'abort';
-            }
+//            } else if ($this->options['discard_aborted_uploads']) {
+//                unlink($file_path);
+//                $file->error = 'abort';
+//            }
             $file->size = $file_size;
             $this->set_file_delete_url($file);
         }
@@ -361,7 +377,7 @@ class UploadHandler
         echo json_encode($info);
     }
 
-    public function post($img_name=null) {
+    public function post($img_name=null, $resize_options) {
         if (isset($_REQUEST['_method']) && $_REQUEST['_method'] === 'DELETE') {
             return $this->delete();
         }
@@ -381,24 +397,25 @@ class UploadHandler
                     isset($_SERVER['HTTP_X_FILE_TYPE']) ?
                         $_SERVER['HTTP_X_FILE_TYPE'] : $upload['type'][$index],
                     $upload['error'][$index],
-                    $index
+                    $index,
+					$resize_options
                 );
             }
-        } elseif ($upload || isset($_SERVER['HTTP_X_FILE_NAME'])) {
-            // param_name is a single object identifier like "file",
-            // $_FILES is a one-dimensional array:
-            $info[] = $this->handle_file_upload(
-                isset($upload['tmp_name']) ? $upload['tmp_name'] : null,
+		} elseif ($upload || isset($_SERVER['HTTP_X_FILE_NAME'])) {
+			// param_name is a single object identifier like "file",
+			// $_FILES is a one-dimensional array:
+			$info[] = $this->handle_file_upload(
+				isset($upload['tmp_name']) ? $upload['tmp_name'] : null,
 				$img_name,
-                isset($_SERVER['HTTP_X_FILE_SIZE']) ?
-                    $_SERVER['HTTP_X_FILE_SIZE'] : (isset($upload['size']) ?
-                        $upload['size'] : null),
-                isset($_SERVER['HTTP_X_FILE_TYPE']) ?
-                    $_SERVER['HTTP_X_FILE_TYPE'] : (isset($upload['type']) ?
-                        $upload['type'] : null),
-                isset($upload['error']) ? $upload['error'] : null
-            );
-        }
+				isset($_SERVER['HTTP_X_FILE_SIZE']) ?
+					$_SERVER['HTTP_X_FILE_SIZE'] : (isset($upload['size']) ?
+					$upload['size'] : null),
+				isset($_SERVER['HTTP_X_FILE_TYPE']) ?
+					$_SERVER['HTTP_X_FILE_TYPE'] : (isset($upload['type']) ?
+					$upload['type'] : null),
+				isset($upload['error']) ? $upload['error'] : null
+			);
+		}
         header('Vary: Accept');
         $json = json_encode($info);
         $redirect = isset($_REQUEST['redirect']) ?

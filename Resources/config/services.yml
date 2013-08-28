@@ -46,19 +46,23 @@ parameters:
   file_uploader.sizes:
     thumbnail:
       folder: thumbnails
-      max_width: 80
-      max_height: 80
+      max_width: 120
+      max_height: 89
+    small_thumbnail:
+      folder: small_thumbnails
+      max_width: 90
+      max_height: 67
     small:
       folder: small
-      max_width: 320
-      max_height: 480
+      max_width: 360
+      max_height: 268
     medium:
       folder: medium
-      max_width: 640
-      max_height: 960
+      max_width: 900
+      max_height: 675
     large:
       folder: large
-      max_width: 1140
+      max_width: 1170
       max_height: 1140
 
 services:

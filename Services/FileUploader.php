@@ -138,7 +138,7 @@ class FileUploader
                     $upload_handler->delete();
                 } else {
 					// RESABOX
-                    $upload_handler->post($options['img_name']);
+                    $upload_handler->post($options['img_name'], $options['resize_options']);
                 }
                 break;
             case 'DELETE':

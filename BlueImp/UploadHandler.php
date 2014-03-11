@@ -249,7 +249,9 @@ class UploadHandler
         // Add missing file extension for known image types:
         if (strpos($file_name, '.') === false &&
             preg_match('/^image\/(gif|jpe?g|png)/', $type, $matches)) {
-            $file_name .= '.'.$matches[1];
+//            $file_name .= '.'.$matches[1];
+			// Resabox: force extension jpeg for resulting file since all files types are reencoded to jpeg
+			$file_name .= '.jpeg';
         }
         if ($this->options['discard_aborted_uploads']) {
             while(is_file($this->options['upload_dir'].$file_name)) {
@@ -316,7 +318,15 @@ class UploadHandler
 					if ($resize_options)
 					{
 						$src = $uploaded_file;
-						$img_r = imagecreatefromjpeg($src);
+
+						// Resabox: allow png source file
+						if ($file->type == 'image/png'){
+							$img_r = imagecreatefrompng($src);
+						}
+						else{
+							$img_r = imagecreatefromjpeg($src);
+						}
+
 						$dst_r = ImageCreateTrueColor( $resize_options['targ_w'], $resize_options['targ_h'] );
 
 						imagecopyresampled($dst_r,$img_r,0,0,$resize_options['x'],$resize_options['y'],

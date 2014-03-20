@@ -39,7 +39,8 @@ class UploadHandler
             'min_width' => 1,
             'min_height' => 1,
             // Set the following option to false to enable resumable uploads:
-            'discard_aborted_uploads' => true,
+			// Also, set to false to override existing files with same name
+            'discard_aborted_uploads' => false,
             // Set to true to rotate images based on EXIF meta data, if available:
             'orient_image' => false,
             'image_versions' => array(

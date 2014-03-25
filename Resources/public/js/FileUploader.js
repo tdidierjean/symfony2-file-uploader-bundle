@@ -73,7 +73,7 @@ function PunkAveFileUploader(options)
 				data = $this.data();
 			$this
 				.off('click')
-				.text('Abort')
+				.text('Annuler')
 				.on('click', function () {
 					$this.remove();
 					data.abort();
